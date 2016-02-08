@@ -40,6 +40,11 @@ from merry import Merry
 
 merry = Merry()
 
+@merry._try
+def write_to_file(filename, data):
+    with open(filename, 'w') as f:
+        f.write(data)
+
 @merry._except(IOError)
 def ioerror():
     print('Error: can't write to file')
@@ -48,26 +53,29 @@ def ioerror():
 def catch_all(e):
     print('Unexpected error: ' + str(e)
 
-@merry._try
-def write_to_file(filename, data):
-    with open(filename, 'w') as f:
-        f.write(data)
-
 write_to_file('some_file', 'some_data')
 ```
 
-While in this example there is more total lines of code after merry is used,
-the key benefit is that the application logic, which is in the `write_to_file`
+While in this example there are more lines of code after merry is used, the
+key benefit is that the application logic, which is in the `write_to_file`
 function, is now completely clean of try/except statements. The exception
-handlers become auxiliary functions that can be moved to a separate module so
-that they stay out of the way.
+handlers become auxiliary functions that can even be moved to a separate
+module so that they stay completely out of the way.
 
-The decorated exception handlers can take zero or one argument. If they take
-an argument, then merry sends the exception object.
+## Access to the Exception Object
+
+The decorated exception handlers can optionally take one argument. If you
+include this argument, then merry sends the exception object.
+
+```python
+@merry._except(Exception)
+def catch_all(e):
+    print('Unexpected error: ' + str(e)
+```
 
 ## The `else` and `finally` clauses
 
-For cases where a more complex try/except block is required, there are also
+For cases that require a more complex try/except block, there are also
 decorators available for `else` and `finally`:
 
 ```python
@@ -83,10 +91,16 @@ def finally_clause():
 ## Passing context to error handlers
 
 In many cases, exception handlers need to have access to application state to
-do their work. When using merry, the `merry.g` object can be used to set
-application state that needs to be accessible to error handlers:
+do their work. When using merry, the `merry.g` object can be used as storage
+of application state that needs to be accessible to error handlers:
 
 ```python
+@merry._try
+def app_logic():
+    db = open_database()
+    merry.g.database = db  # save it in the error context just in case
+    # do database stuff here
+
 @merry._except(Exception)
 def catch_all():
     db = getattr(merry.g, 'database', None)
@@ -94,12 +108,6 @@ def catch_all():
         close_database(db)
     print('Unexpected error, quitting')
     sys.exit(1)
-
-@merry._try
-def app_logic():
-    db = open_database()
-    merry.g.database = db  # save it in the error context just in case
-    # do database stuff here
 ```
 
 ## Debug mode
@@ -119,19 +127,24 @@ mode can be overriden by individual error handlers:
 ```python
 @merry._except(IOError, debug=False)
 def ioerror():
+    # this function will run even in debug mode
     print('Error: can't write to file')
 ```
 
+The reverse is also possible. If you are running with debug mode turned off,
+but want to suspend an exception handler and have that exception bubble up,
+just set `debug=True` for that handler.
+
 ## Logging
 
-Conversely, when an application is running in production mode, it is desired
-that all errors are suppressed and instead they are sent to a log. Merry
-creates a logger on which it writes all the exceptions it handles, include
-their backtraces. This logger is a standard instance of the Python standard
-library logging class.
+When an application is running in production mode, it is desired that all
+errors are suppressed and instead they are sent to a log. Merry creates a
+logger on which it writes all the exceptions it handles, include their
+backtraces. This logger is a standard instance of the Python standard library
+logging class.
 
-The logger instance is called `'merry'` by default, and can be referenced as
-`merry.logger`. If desired, merry can hook up to a logger owned by the
+The default logger instance is called `'merry'`, and can be referenced as
+`merry.logger`. If desired, merry can hook up to a logger object owned by the
 application:
 
 ```python
@@ -141,8 +154,8 @@ merry = Merry(logger_name='my_logger')
 ```
 
 By default, the logger created by merry does not have any handlers attached,
-so caught exceptions will not be printed anywhere. If you want exceptions
-to be printed to the console, you can add a handler that writes to stderr:
+so caught exceptions will not be logged anywhere. If you want exceptions to be
+written to the console, you can add a handler that writes to stderr:
 
 ```python
 merry = Merry()
