@@ -208,8 +208,7 @@ class TestMerry(unittest.TestCase):
 
         f()
         self.assertIn('Traceback', stream.getvalue())
-        self.assertIn('ZeroDivisionError: integer division or modulo by zero',
-                      stream.getvalue())
+        self.assertIn('ZeroDivisionError: ', stream.getvalue())
 
     def test_custom_logger(self):
         my_logger = logging.getLogger('foo')
@@ -229,8 +228,7 @@ class TestMerry(unittest.TestCase):
 
         f()
         self.assertIn('Traceback', stream.getvalue())
-        self.assertIn('ZeroDivisionError: integer division or modulo by zero',
-                      stream.getvalue())
+        self.assertIn('ZeroDivisionError: ', stream.getvalue())
 
 
 if __name__ == '__main__':
