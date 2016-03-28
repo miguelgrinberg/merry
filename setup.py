@@ -9,7 +9,7 @@ from setuptools import setup
 
 setup(
     name='merry',
-    version='0.1.0',
+    version='0.2.0',
     url='http://github.com/miguelgrinberg/merry/',
     license='MIT',
     author='Miguel Grinberg',
