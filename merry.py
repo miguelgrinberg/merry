@@ -21,8 +21,15 @@ class Merry(object):
     def _try(self, f):
         @wraps(f)
         def wrapper(*args, **kwargs):
+            ret = None
             try:
-                f(*args, **kwargs)
+                ret = f(*args, **kwargs)
+
+                # note that if the function returned something, the else clause
+                # will be skipped. This is a similar behavior to a normal
+                # try/except/else block.
+                if ret is not None:
+                    return ret
             except Exception as e:
                 # find the best handler for this exception
                 handler = None
@@ -49,17 +56,20 @@ class Merry(object):
 
                 # invoke handler
                 if len(inspect.getargspec(self.except_[handler])[0]) == 0:
-                    self.except_[handler]()
+                    return self.except_[handler]()
                 else:
-                    self.except_[handler](e)
+                    return self.except_[handler](e)
             else:
                 # if we have an else handler, call it now
                 if self.else_ is not None:
-                    self.else_()
+                    return self.else_()
             finally:
                 # if we have a finally handler, call it now
                 if self.finally_ is not None:
-                    self.finally_()
+                    alt_ret = self.finally_()
+                    if alt_ret is not None:
+                        ret = alt_ret
+                    return ret
         return wrapper
 
     def _except(self, *args, **kwargs):
