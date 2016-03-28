@@ -174,6 +174,88 @@ class TestMerry(unittest.TestCase):
 
         self.assertRaises(ZeroDivisionError, f)
 
+    def test_return_value_if_no_error(self):
+        m = Merry()
+
+        @m._try
+        def f():
+            return 'foo'
+
+        @m._else
+        def else_clause():
+            return 'bar'
+
+        self.assertEqual(f(), 'foo')
+
+    def test_return_value_from_except(self):
+        m = Merry()
+
+        @m._except(ZeroDivisionError)
+        def zerodiv():
+            return 'foo'
+
+        @m._try
+        def f():
+            1/0
+
+        self.assertEqual(f(), 'foo')
+
+    def test_return_value_from_else(self):
+        m = Merry()
+
+        @m._else
+        def else_clause():
+            return 'foo'
+
+        @m._try
+        def f():
+            pass
+
+        self.assertEqual(f(), 'foo')
+
+    def test_return_value_from_finally(self):
+        m = Merry()
+
+        @m._try
+        def f():
+            pass
+
+        @m._finally
+        def finally_clause():
+            return 'bar'
+
+        self.assertEqual(f(), 'bar')
+
+    def test_return_value_from_finally2(self):
+        m = Merry()
+
+        @m._try
+        def f():
+            return 'foo'
+
+        @m._finally
+        def finally_clause():
+            return 'bar'
+
+        self.assertEqual(f(), 'bar')
+
+    def test_return_value_from_finally3(self):
+        m = Merry()
+
+        @m._try
+        def f():
+            1/0
+
+        @m._except(ZeroDivisionError)
+        def zerodiv():
+            return 'foo'
+
+        @m._finally
+        def finally_clause():
+            return 'bar'
+
+        self.assertEqual(f(), 'bar')
+
     def test_global_debug(self):
         m = Merry(debug=True)
         m.g.except_called = False
@@ -256,71 +338,6 @@ class TestMerry(unittest.TestCase):
         f()
         self.assertIn('Traceback', stream.getvalue())
         self.assertIn('ZeroDivisionError: ', stream.getvalue())
-
-    def test_return_value_if_no_error(self):
-        m = Merry()
-
-        @m._try
-        def f():
-            return 'foo'
-
-        @m._else
-        def else_clause():
-            return 'bar'
-
-        self.assertEqual(f(), 'foo')
-
-    def test_return_value_from_except(self):
-        m = Merry()
-
-        @m._except(ZeroDivisionError)
-        def zerodiv():
-            return 'foo'
-
-        @m._try
-        def f():
-            1/0
-
-        self.assertEqual(f(), 'foo')
-
-    def test_return_value_from_else(self):
-        m = Merry()
-
-        @m._else
-        def else_clause():
-            return 'foo'
-
-        @m._try
-        def f():
-            pass
-
-        self.assertEqual(f(), 'foo')
-
-    def test_return_value_from_finally(self):
-        m = Merry()
-
-        @m._try
-        def f():
-            pass
-
-        @m._finally
-        def finally_clause():
-            return 'bar'
-
-        self.assertEqual(f(), 'bar')
-
-    def test_return_value_from_finally2(self):
-        m = Merry()
-
-        @m._try
-        def f():
-            return 'foo'
-
-        @m._finally
-        def finally_clause():
-            return 'bar'
-
-        self.assertEqual(f(), 'bar')
 
 
 if __name__ == '__main__':

@@ -88,6 +88,23 @@ def finally_clause():
     print('Clean up time!')
 ```
 
+## Returning values
+
+Returning values from functions protected with the `try` decorator or the
+corresponding `except`, `else` and `finally` handlers follow certain rules
+that try to implement a behavior similar to a Python try/except:
+
+- The value returned by a function decorated with the `try` decorator is
+  normally returned to the caller.
+- If there is an exception, then the value returned by the `except` handler
+  that matches the exception is returned to the caller.
+- The `else` handler only runs if the `try` function does not raise an
+  exception and returns `None`
+- If the `try` function returns `None` and there is an `else` handler, then
+  its return value is given to the caller.
+- If there is a `finally` handler and it returns a value that is not `None`,
+  then this value takes the place of any other returned value.
+
 ## Passing context to error handlers
 
 In many cases, exception handlers need to have access to application state to
