@@ -1,0 +1,18 @@
+#!/bin/bash -ex
+
+VERSION="$1"
+if [[ "$VERSION" == "" ]]; then
+    echo "Usage: $0 <version>"
+fi
+
+echo $VERSION > __version__
+rm -rf dist
+pip install --upgrade pip wheel twine
+python setup.py sdist bdist_wheel --universal
+
+git add __version__
+git commit -m "Release $VERSION"
+git tag -f v$VERSION
+git push origin master
+
+twine upload dist/*

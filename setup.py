@@ -7,9 +7,11 @@ Decorator based error handling.
 from setuptools import setup
 
 
+version = open('__version__').read().strip()
+
 setup(
     name='merry',
-    version='0.2.0',
+    version=version,
     url='http://github.com/miguelgrinberg/merry/',
     license='MIT',
     author='Miguel Grinberg',
