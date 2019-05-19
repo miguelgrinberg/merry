@@ -2,6 +2,13 @@ from functools import wraps
 import inspect
 import logging
 
+getargspec = None
+if getattr(inspect, 'getfullargspec', None):
+    getargspec = inspect.getfullargspec
+else:
+    # this one is deprecated in Python 3, but available in Python 2
+    getargspec = inspect.getargspec
+
 
 class _Namespace:
     pass
@@ -55,7 +62,7 @@ class Merry(object):
                     raise e
 
                 # invoke handler
-                if len(inspect.getargspec(self.except_[handler])[0]) == 0:
+                if len(getargspec(self.except_[handler])[0]) == 0:
                     return self.except_[handler]()
                 else:
                     return self.except_[handler](e)
