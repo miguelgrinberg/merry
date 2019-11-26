@@ -17,7 +17,7 @@ class _Namespace:
 class Merry(object):
     def __init__(self, logger_name='merry', debug=False):
         self.__logger = logging.getLogger(logger_name)
-        self.__g = _Namespace()
+        self.g = _Namespace()
         self.__debug = debug
         self.__except = {}
         self.__force_debug = []
@@ -98,3 +98,21 @@ class Merry(object):
     def _finally(self, f):
         self.__finally_ = f
         return f
+
+    # namespace accessors
+
+    def __getattr__(self, key):
+        return getattr(self.g, key)
+
+    def __setattr__(self, key, value):
+        if hasattr(self, key):
+            super().__setattr__(key, value)
+        else:
+            setattr(self.g, key, value)
+
+    def __delattr__(self, key):
+        if not hasattr(self, key):
+            delattr(self.g, key)
+
+    def __dir__(self):
+        return dir(self.g)
