@@ -85,18 +85,18 @@ class Merry(object):
 
                     except_start(handler, e)
                     # invoke handler
-                    ret = await _wrap_async(self.__except[handler])()
+                    ret = await _wrap_async(self.__except[handler])(*args, **kwargs)
                     except_end(handler, e)
 
                     return ret
                 else:
                     # if we have an else handler, call it now
                     if self.__else is not None:
-                        return await _wrap_async(self.__else)()
+                        return await _wrap_async(self.__else)(*args, **kwargs)
                 finally:
                     # if we have a finally handler, call it now
                     if self.__finally is not None:
-                        alt_ret = await _wrap_async(self.__finally)()
+                        alt_ret = await _wrap_async(self.__finally)(*args, **kwargs)
                         if alt_ret is not None:
                             ret = alt_ret
                         return ret
@@ -128,18 +128,18 @@ class Merry(object):
 
                     except_start(handler, e)
                     # invoke handler
-                    ret = self.__except[handler]()
+                    ret = self.__except[handler](*args, **kwargs)
                     except_end(handler, e)
 
                     return ret
                 else:
                     # if we have an else handler, call it now
                     if self.__else is not None:
-                        return self.__else()
+                        return self.__else(*args, **kwargs)
                 finally:
                     # if we have a finally handler, call it now
                     if self.__finally is not None:
-                        alt_ret = self.__finally()
+                        alt_ret = self.__finally(*args, **kwargs)
                         if alt_ret is not None:
                             ret = alt_ret
                         return ret
