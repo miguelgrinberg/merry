@@ -26,7 +26,7 @@ def _wrap_async(fn):
 class Merry(object):
     def __init__(self, logger_name='merry', debug=False):
         self.__logger = logging.getLogger(logger_name)
-        self.g = _Namespace()
+        self.g = None
         self.__debug = debug
         self.__except = {}
         self.__except_debug = {}
@@ -61,6 +61,7 @@ class Merry(object):
         if inspect.iscoroutinefunction(f):
             @wraps(f)
             async def async_wrapper(*args, **kwargs):
+                self.g = _Namespace()
                 ret = None
                 try:
                     ret = await f(*args, **kwargs)
@@ -94,16 +95,22 @@ class Merry(object):
                     if self.__else is not None:
                         return await _wrap_async(self.__else)(*args, **kwargs)
                 finally:
+                    alt_ret = None
                     # if we have a finally handler, call it now
                     if self.__finally is not None:
                         alt_ret = await _wrap_async(self.__finally)(*args, **kwargs)
-                        if alt_ret is not None:
-                            ret = alt_ret
+
+                    self.g = None
+
+                    if alt_ret is not None:
+                        ret = alt_ret
                         return ret
+
             return async_wrapper
         else:
             @wraps(f)
             def wrapper(*args, **kwargs):
+                self.g = _Namespace()
                 ret = None
                 try:
                     ret = f(*args, **kwargs)
@@ -137,11 +144,15 @@ class Merry(object):
                     if self.__else is not None:
                         return self.__else(*args, **kwargs)
                 finally:
+                    alt_ret = None
                     # if we have a finally handler, call it now
                     if self.__finally is not None:
                         alt_ret = self.__finally(*args, **kwargs)
-                        if alt_ret is not None:
-                            ret = alt_ret
+
+                    self.g = None
+
+                    if alt_ret is not None:
+                        ret = alt_ret
                         return ret
             return wrapper
 
