@@ -29,12 +29,35 @@ class Merry(object):
         self.g = _Namespace()
         self.__debug = debug
         self.__except = {}
-        self.__force_debug = []
-        self.__force_handle = []
+        self.__except_debug = {}
         self.__else = None
         self.__finally = None
+        self.__as = {}
 
     def _try(self, f):
+        def except_start(handler, e):
+            alias = self.__as[handler]
+            if alias is not None:
+                setattr(self.g, alias, e)
+
+        def except_end(handler, e):
+            alias = self.__as[handler]
+            if alias is not None and hasattr(self.g, alias):
+                delattr(self.g, alias)
+
+        def get_handler_for(e):
+            # find the best handler for this exception
+            handler = None
+            for c in self.__except.keys():
+                if isinstance(e, c):
+                    if handler is None or issubclass(c, handler):
+                        handler = c
+            return handler
+
+        def debug_enabled(handler):
+            return self.__debug if self.__except_debug[handler] is None \
+                else self.__except_debug[handler]
+
         if inspect.iscoroutinefunction(f):
             @wraps(f)
             async def async_wrapper(*args, **kwargs):
@@ -48,13 +71,7 @@ class Merry(object):
                     if ret is not None:
                         return ret
                 except Exception as e:
-                    # find the best handler for this exception
-                    handler = None
-                    for c in self.__except.keys():
-                        if isinstance(e, c):
-                            if handler is None or issubclass(c, handler):
-                                handler = c
-
+                    handler = get_handler_for(e)
                     # if we don't have any handler, we let the exception bubble up
                     if handler is None:
                         raise e
@@ -63,16 +80,15 @@ class Merry(object):
                     self.__logger.exception('[merry] Exception caught')
 
                     # if in debug mode, then bubble up to let a debugger handle
-                    debug = self.__debug
-                    if handler in self.__force_debug:
-                        debug = True
-                    elif handler in self.__force_handle:
-                        debug = False
-                    if debug:
+                    if debug_enabled(handler):
                         raise e
 
+                    except_start(handler, e)
                     # invoke handler
-                    return await _wrap_async(self.__except[handler])()
+                    ret = await _wrap_async(self.__except[handler])()
+                    except_end(handler, e)
+
+                    return ret
                 else:
                     # if we have an else handler, call it now
                     if self.__else is not None:
@@ -98,13 +114,7 @@ class Merry(object):
                     if ret is not None:
                         return ret
                 except Exception as e:
-                    # find the best handler for this exception
-                    handler = None
-                    for c in self.__except.keys():
-                        if isinstance(e, c):
-                            if handler is None or issubclass(c, handler):
-                                handler = c
-
+                    handler = get_handler_for(e)
                     # if we don't have any handler, we let the exception bubble up
                     if handler is None:
                         raise e
@@ -113,16 +123,15 @@ class Merry(object):
                     self.__logger.exception('[merry] Exception caught')
 
                     # if in debug mode, then bubble up to let a debugger handle
-                    debug = self.__debug
-                    if handler in self.__force_debug:
-                        debug = True
-                    elif handler in self.__force_handle:
-                        debug = False
-                    if debug:
+                    if debug_enabled(handler):
                         raise e
 
+                    except_start(handler, e)
                     # invoke handler
-                    return self.__except[handler]()
+                    ret = self.__except[handler]()
+                    except_end(handler, e)
+
+                    return ret
                 else:
                     # if we have an else handler, call it now
                     if self.__else is not None:
@@ -136,15 +145,12 @@ class Merry(object):
                         return ret
             return wrapper
 
-    def _except(self, *args, **kwargs):
+    def _except(self, *args, debug=None, _as=None):
         def decorator(f):
             for e in args:
                 self.__except[e] = f
-            d = kwargs.get('debug', None)
-            if d:
-                self.__force_debug.append(e)
-            elif d is not None:
-                self.__force_handle.append(e)
+                self.__except_debug[e] = debug
+                self.__as[e] = _as
             return f
         return decorator
 
