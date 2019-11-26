@@ -189,13 +189,16 @@ class Merry(object):
 
     @property
     def g(self):
+        if self.__g is None:
+            raise RuntimeError(
+                "context can only be accessed inside error handling clause")
         return self.__g
 
     def __getattr__(self, key):
         if self.__g is not None:
             return getattr(self.__g, key)
         raise RuntimeError(
-            "context can only be accessed during error handling")
+            "context can only be accessed inside error handling clause")
 
     def __setattr__(self, key, value):
         if key[:6] == "_Merry" and key[6:] in self.__slots__:
@@ -204,7 +207,7 @@ class Merry(object):
             return setattr(self.__g, key, value)
         else:
             raise RuntimeError(
-                "context can only be accessed during error handling")
+                "context can only be accessed inside error handling clause")
 
     def __delattr__(self, key):
         if not hasattr(self, key):
@@ -212,4 +215,4 @@ class Merry(object):
                 delattr(self.__g, key)
             else:
                 raise RuntimeError(
-                    "context can only be accessed during error handling")
+                    "context can only be accessed inside error handling clause")
