@@ -24,9 +24,21 @@ def _wrap_async(fn):
 
 
 class Merry(object):
+
+    __slots__ = (
+        "__logger",
+        "__g",
+        "__debug",
+        "__except",
+        "__except_debug",
+        "__else",
+        "__finally",
+        "__as",
+    )
+
     def __init__(self, logger_name='merry', debug=False):
         self.__logger = logging.getLogger(logger_name)
-        self.g = None
+        self.__g = None
         self.__debug = debug
         self.__except = {}
         self.__except_debug = {}
@@ -61,7 +73,7 @@ class Merry(object):
         if inspect.iscoroutinefunction(f):
             @wraps(f)
             async def async_wrapper(*args, **kwargs):
-                self.g = _Namespace()
+                self.__g = _Namespace()
                 ret = None
                 try:
                     ret = await f(*args, **kwargs)
@@ -100,7 +112,7 @@ class Merry(object):
                     if self.__finally is not None:
                         alt_ret = await _wrap_async(self.__finally)(*args, **kwargs)
 
-                    self.g = None
+                    self.__g = None
 
                     if alt_ret is not None:
                         ret = alt_ret
@@ -110,7 +122,7 @@ class Merry(object):
         else:
             @wraps(f)
             def wrapper(*args, **kwargs):
-                self.g = _Namespace()
+                self.__g = _Namespace()
                 ret = None
                 try:
                     ret = f(*args, **kwargs)
@@ -149,7 +161,7 @@ class Merry(object):
                     if self.__finally is not None:
                         alt_ret = self.__finally(*args, **kwargs)
 
-                    self.g = None
+                    self.__g = None
 
                     if alt_ret is not None:
                         ret = alt_ret
@@ -175,25 +187,29 @@ class Merry(object):
 
     # namespace accessors
 
+    @property
+    def g(self):
+        return self.__g
+
     def __getattr__(self, key):
-        if self.g is not None:
-            return getattr(self.g, key)
+        if self.__g is not None:
+            return getattr(self.__g, key)
         raise RuntimeError(
             "context can only be accessed during error handling")
 
     def __setattr__(self, key, value):
-        if hasattr(self, key):
+        if key[:6] == "_Merry" and key[6:] in self.__slots__:
             return super().__setattr__(key, value)
-        elif self.g is not None:
-            return setattr(self.g, key, value)
+        elif self.__g is not None:
+            return setattr(self.__g, key, value)
         else:
             raise RuntimeError(
                 "context can only be accessed during error handling")
 
     def __delattr__(self, key):
         if not hasattr(self, key):
-            if self.g is not None:
-                delattr(self.g, key)
+            if self.__g is not None:
+                delattr(self.__g, key)
             else:
                 raise RuntimeError(
                     "context can only be accessed during error handling")
