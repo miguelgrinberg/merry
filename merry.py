@@ -176,17 +176,24 @@ class Merry(object):
     # namespace accessors
 
     def __getattr__(self, key):
-        return getattr(self.g, key)
+        if self.g is not None:
+            return getattr(self.g, key)
+        raise RuntimeError(
+            "context can only be accessed during error handling")
 
     def __setattr__(self, key, value):
         if hasattr(self, key):
-            super().__setattr__(key, value)
+            return super().__setattr__(key, value)
+        elif self.g is not None:
+            return setattr(self.g, key, value)
         else:
-            setattr(self.g, key, value)
+            raise RuntimeError(
+                "context can only be accessed during error handling")
 
     def __delattr__(self, key):
         if not hasattr(self, key):
-            delattr(self.g, key)
-
-    def __dir__(self):
-        return dir(self.g)
+            if self.g is not None:
+                delattr(self.g, key)
+            else:
+                raise RuntimeError(
+                    "context can only be accessed during error handling")
