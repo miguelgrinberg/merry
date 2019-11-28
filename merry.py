@@ -203,7 +203,7 @@ class Merry(object):
                 "context is only accessible within error handling clauses")
 
     def __delattr__(self, key):
-        if not hasattr(self, key):
+        if key[:6] != "_Merry" or key[6:] not in self.__slots__:
             if self.__g is not None:
                 delattr(self.__g, key)
             else:
