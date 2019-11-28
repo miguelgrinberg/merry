@@ -187,13 +187,6 @@ class Merry(object):
 
     # namespace accessors
 
-    @property
-    def g(self):
-        if self.__g is None:
-            raise RuntimeError(
-                "context can only be accessed inside error handling clause")
-        return self.__g
-
     def __getattr__(self, key):
         if self.__g is not None:
             return getattr(self.__g, key)
