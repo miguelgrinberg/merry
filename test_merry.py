@@ -31,139 +31,157 @@ class TestMerry(unittest.TestCase):
 
     def test_simple_except(self):
         m = Merry()
-        m.g.except_called = False
+        except_called = False
 
         @m._except(ZeroDivisionError)
         def zerodiv():
-            m.g.except_called = True
+            nonlocal except_called
+            except_called = True
 
         @m._try
         def f():
             1/0
 
         f()
-        self.assertTrue(m.g.except_called)
+        self.assertTrue(except_called)
 
     def test_simple_except2(self):
         m = Merry()
-        m.g.except_called = False
+        except_called = False
 
-        @m._except(ZeroDivisionError)
-        def zerodiv(e):
-            self.assertIsInstance(e, ZeroDivisionError)
-            m.g.except_called = True
+        @m._except(ZeroDivisionError, _as="e")
+        def zerodiv():
+            nonlocal except_called
+            self.assertIsInstance(m.e, ZeroDivisionError)
+            except_called = True
 
         @m._try
         def f():
             1/0
 
         f()
-        self.assertTrue(m.g.except_called)
+        self.assertTrue(except_called)
 
     def test_except_parent(self):
         m = Merry()
-        m.g.except_called = False
+        except_parent_called = False
+        except_child_called = False
 
         @m._except(Exception)
-        def catch_all(e):
-            pass
+        def catch_all():
+            nonlocal except_parent_called
+            except_parent_called = True
 
-        @m._except(ArithmeticError)
-        def arith_error(e):
-            self.assertIsInstance(e, ZeroDivisionError)
-            m.g.except_called = True
+        @m._except(ArithmeticError, _as="e")
+        def arith_error():
+            nonlocal except_child_called
+            self.assertIsInstance(m.e, ZeroDivisionError)
+            except_child_called = True
 
         @m._try
         def f():
             1/0
 
         f()
-        self.assertTrue(m.g.except_called)
+        self.assertTrue(except_child_called)
+        self.assertFalse(except_parent_called)
 
     def test_except_finally(self):
         m = Merry()
-        m.g.except_called = False
-        m.g.else_called = False
-        m.g.finally_called = False
+        except_called = False
+        else_called = False
+        finally_called = False
 
         @m._except(ZeroDivisionError)
-        def zerodiv(e):
-            m.g.except_called = True
+        def zerodiv():
+            nonlocal except_called
+            except_called = True
 
         @m._else
         def else_clause():
-            m.g.else_called = True
+            nonlocal else_called
+            else_called = True
 
         @m._finally
         def finally_clause():
-            m.g.finally_called = True
+            nonlocal finally_called
+            finally_called = True
 
         @m._try
         def f():
             1/0
 
         f()
-        self.assertTrue(m.g.except_called)
-        self.assertFalse(m.g.else_called)
-        self.assertTrue(m.g.finally_called)
+        self.assertTrue(except_called)
+        self.assertFalse(else_called)
+        self.assertTrue(finally_called)
 
     def test_else_finally(self):
         m = Merry()
-        m.g.except_called = False
-        m.g.else_called = False
-        m.g.finally_called = False
+        except_parent_called = False
+        except_child_called = False
+        else_called = False
+        finally_called = False
 
         @m._except(Exception)
-        def catch_all(e):
-            pass
+        def catch_all():
+            nonlocal except_parent_called
+            except_parent_called = True
 
         @m._except(ArithmeticError)
-        def arith_error(e):
-            m.g.except_called = True
+        def arith_error():
+            nonlocal except_child_called
+            except_child_called = True
 
         @m._else
         def else_clause():
-            m.g.else_called = True
+            nonlocal else_called
+            else_called = True
 
         @m._finally
         def finally_clause():
-            m.g.finally_called = True
+            nonlocal finally_called
+            finally_called = True
 
         @m._try
         def f():
             pass
 
         f()
-        self.assertFalse(m.g.except_called)
-        self.assertTrue(m.g.else_called)
-        self.assertTrue(m.g.finally_called)
+        self.assertFalse(except_child_called)
+        self.assertFalse(except_parent_called)
+        self.assertTrue(else_called)
+        self.assertTrue(finally_called)
 
     def test_return_prevents_else(self):
         m = Merry()
-        m.g.except_called = False
-        m.g.else_called = False
-        m.g.finally_called = False
+        except_called = False
+        else_called = False
+        finally_called = False
 
         @m._except(ZeroDivisionError)
-        def zerodiv(e):
-            m.g.except_called = True
+        def zerodiv():
+            nonlocal except_called
+            except_called = True
 
         @m._else
         def else_clause():
-            m.g.else_called = True
+            nonlocal else_called
+            else_called = True
 
         @m._finally
         def finally_clause():
-            m.g.finally_called = True
+            nonlocal finally_called
+            finally_called = True
 
         @m._try
         def f():
             return 'foo'
 
         f()
-        self.assertFalse(m.g.except_called)
-        self.assertFalse(m.g.else_called)
-        self.assertTrue(m.g.finally_called)
+        self.assertFalse(except_called)
+        self.assertFalse(else_called)
+        self.assertTrue(finally_called)
 
     def test_unhandled(self):
         m = Merry()
@@ -180,6 +198,10 @@ class TestMerry(unittest.TestCase):
         @m._try
         def f():
             return 'foo'
+
+        @m._except
+        def except_clause():
+            return 'baz'
 
         @m._else
         def else_clause():
@@ -206,6 +228,10 @@ class TestMerry(unittest.TestCase):
         @m._else
         def else_clause():
             return 'foo'
+
+        @m._except
+        def except_clause():
+            pass
 
         @m._try
         def f():
@@ -258,58 +284,62 @@ class TestMerry(unittest.TestCase):
 
     def test_global_debug(self):
         m = Merry(debug=True)
-        m.g.except_called = False
+        except_called = False
 
         @m._except(ZeroDivisionError)
         def zerodiv():
-            m.g.except_called = True
+            nonlocal except_called
+            except_called = True
 
         @m._try
         def f():
             1/0
 
         self.assertRaises(ZeroDivisionError, f)
-        self.assertFalse(m.g.except_called)
+        self.assertFalse(except_called)
 
     def test_local_debug(self):
         m = Merry()
-        m.g.except_called = False
+        except_called = False
 
         @m._except(ZeroDivisionError, debug=True)
         def zerodiv():
-            m.g.except_called = True
+            nonlocal except_called
+            except_called = True
 
         @m._try
         def f():
             1/0
 
         self.assertRaises(ZeroDivisionError, f)
-        self.assertFalse(m.g.except_called)
+        self.assertFalse(except_called)
 
     def test_local_debug_override(self):
         m = Merry(debug=True)
-        m.g.except_called = False
+        except_called = False
 
         @m._except(ZeroDivisionError, debug=False)
         def zerodiv():
-            m.g.except_called = True
+            nonlocal except_called
+            except_called = True
 
         @m._try
         def f():
             1/0
 
         f()
-        self.assertTrue(m.g.except_called)
+        self.assertTrue(except_called)
 
     def test_logger(self):
         m = Merry()
-        m.g.except_called = False
+        except_called = False
         stream = StringIO()
-        m.logger.addHandler(logging.StreamHandler(stream))
+        m._Merry__logger.addHandler(logging.StreamHandler(stream))
 
         @m._except(ZeroDivisionError)
         def zerodiv():
-            m.g.except_called = True
+            nonlocal except_called
+            except_called = True
 
         @m._try
         def f():
@@ -325,11 +355,12 @@ class TestMerry(unittest.TestCase):
         my_logger.addHandler(logging.StreamHandler(stream))
 
         m = Merry(logger_name='foo')
-        m.g.except_called = False
+        except_called = False
 
         @m._except(ZeroDivisionError)
         def zerodiv():
-            m.g.except_called = True
+            nonlocal except_called
+            except_called = True
 
         @m._try
         def f():
