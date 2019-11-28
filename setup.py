@@ -24,7 +24,8 @@ setup(
     platforms='any',
     install_requires=[],
     tests_require=[
-        'coverage'
+        'coverage',
+        'aiounittest'
     ],
     test_suite='test_merry',
     classifiers=[
