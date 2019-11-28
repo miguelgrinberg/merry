@@ -50,12 +50,12 @@ class Merry(object):
         def except_start(handler, e):
             alias = self.__as[handler]
             if alias is not None:
-                setattr(self.g, alias, e)
+                setattr(self.__g, alias, e)
 
         def except_end(handler, e):
             alias = self.__as[handler]
-            if alias is not None and hasattr(self.g, alias):
-                delattr(self.g, alias)
+            if alias is not None and hasattr(self.__g, alias):
+                delattr(self.__g, alias)
 
         def get_handler_for(e):
             # find the best handler for this exception
@@ -191,7 +191,7 @@ class Merry(object):
         if self.__g is not None:
             return getattr(self.__g, key)
         raise RuntimeError(
-            "context can only be accessed inside error handling clause")
+            "context is only accessible within error handling clauses")
 
     def __setattr__(self, key, value):
         if key[:6] == "_Merry" and key[6:] in self.__slots__:
@@ -200,7 +200,7 @@ class Merry(object):
             return setattr(self.__g, key, value)
         else:
             raise RuntimeError(
-                "context can only be accessed inside error handling clause")
+                "context is only accessible within error handling clauses")
 
     def __delattr__(self, key):
         if not hasattr(self, key):
@@ -208,4 +208,4 @@ class Merry(object):
                 delattr(self.__g, key)
             else:
                 raise RuntimeError(
-                    "context can only be accessed inside error handling clause")
+                    "context is only accessible within error handling clauses")
