@@ -200,7 +200,7 @@ class TestMerry(aiounittest.AsyncTestCase):
         def f():
             return 'foo'
 
-        @m._except
+        @m._except(Exception)
         def except_clause():
             return 'baz'
 
@@ -371,6 +371,21 @@ class TestMerry(aiounittest.AsyncTestCase):
         self.assertIn('Traceback', stream.getvalue())
         self.assertIn('ZeroDivisionError: ', stream.getvalue())
 
+    def test_no_else_without_except(self):
+        m = Merry()
+        else_called = False
+
+        @m._try
+        def f():
+            1/0
+        
+        @m._else
+        def else_clause():
+            nonlocal else_called
+            else_called = True
+        
+        self.assertRaises(RuntimeError, f)
+
     def test_same_signature_except_finally(self):
         m = Merry()
         foo = object()
@@ -437,6 +452,10 @@ class TestMerry(aiounittest.AsyncTestCase):
             nonlocal else_args, else_kwargs
             else_args = args
             else_kwargs = kwargs
+        
+        @m._except(Exception)
+        def except_clause(*args, **kwargs):
+            pass
 
         @m._finally
         def finally_clause(*args, **kwargs):

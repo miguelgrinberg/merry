@@ -69,10 +69,16 @@ class Merry(object):
         def debug_enabled(handler):
             return self.__debug if self.__except_debug[handler] is None \
                 else self.__except_debug[handler]
+        
+        def assert_error_handling():
+            if self.__else is not None and len(self.__except) == 0:
+                raise RuntimeError("else clause should come with except clause(s)")
 
         if inspect.iscoroutinefunction(f):
             @wraps(f)
             async def async_wrapper(*args, **kwargs):
+                assert_error_handling()
+
                 self.__g = _Namespace()
                 ret = None
                 try:
@@ -122,6 +128,8 @@ class Merry(object):
         else:
             @wraps(f)
             def wrapper(*args, **kwargs):
+                assert_error_handling()
+
                 self.__g = _Namespace()
                 ret = None
                 try:
@@ -169,6 +177,12 @@ class Merry(object):
             return wrapper
 
     def _except(self, *args, debug=None, _as=None):
+        if len(args) == 1 and not inspect.isclass(args[0]):  # @m._except as deco
+            self.__except[BaseException] = args[0]
+            self.__except_debug[BaseException] = None
+            self.__as[BaseException] = None
+            return args[0]
+
         def decorator(f):
             for e in args:
                 self.__except[e] = f
