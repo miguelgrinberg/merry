@@ -22,7 +22,7 @@ class TestMerry(aiounittest.AsyncTestCase):
     @classmethod
     def tearDownClass(cls):
         cov.stop()
-        cov.report(include='merry.py')
+        cov.report(include='merry.py', show_missing=True)
 
     def setUp(self):
         pass
@@ -46,7 +46,7 @@ class TestMerry(aiounittest.AsyncTestCase):
         f()
         self.assertTrue(except_called)
 
-    def test_simple_except2(self):
+    def test_simple_except_as(self):
         m = Merry()
         except_called = False
 
@@ -549,8 +549,198 @@ class TestMerry(aiounittest.AsyncTestCase):
         self.assertRaises(RuntimeError, access_outside)
 
     def test_context_setattr(self):
-        pass
-    
+        m = Merry()
+        expected_obj1 = object()
+        except_has_attr1 = False
+        except_called = False
+
+        def access_outside():
+            m.o2 = object()
+
+        @m._except(Exception)
+        def catch_all(o1):
+            nonlocal except_called, except_has_attr1
+            except_has_attr1 = hasattr(m, "o1")
+            except_called = True
+
+        @m._try
+        def f(o1):
+            m.o1 = o1
+            1/0
+
+
+        f(expected_obj1)
+
+        self.assertTrue(except_called)
+        self.assertTrue(except_has_attr1)
+
+        self.assertRaises(RuntimeError, access_outside)
+
+    async def test_async_unhandled(self):
+        m = Merry()
+
+        @m._try
+        async def f():
+            await asyncio.sleep(0)
+            1/0
+
+        with self.assertRaises(ZeroDivisionError) as e:
+            await f()
+
+    async def test_async_return_value_if_no_error(self):
+        m = Merry()
+
+        @m._try
+        async def f():
+            await asyncio.sleep(0)
+            return 'foo'
+
+        @m._except
+        def except_clause():
+            return 'baz'
+
+        @m._else
+        def else_clause():
+            return 'bar'
+
+        self.assertEqual(await f(), 'foo')
+
+    async def test_async_return_value_from_except(self):
+        m = Merry()
+
+        @m._except(ZeroDivisionError)
+        async def zerodiv():
+            await asyncio.sleep(0)
+            return 'foo'
+
+        @m._try
+        async def f():
+            await asyncio.sleep(0)
+            1/0
+
+        self.assertEqual(await f(), 'foo')
+
+    async def test_async_return_value_from_else(self):
+        m = Merry()
+
+        @m._else
+        async def else_clause():
+            await asyncio.sleep(0)
+            return 'foo'
+
+        @m._except
+        async def except_clause():
+            await asyncio.sleep(0)
+            pass
+
+        @m._try
+        async def f():
+            await asyncio.sleep(0)
+
+        self.assertEqual(await f(), 'foo')
+
+    async def test_async_return_value_from_finally(self):
+        m = Merry()
+
+        @m._try
+        async def f():
+            await asyncio.sleep(0)
+
+        @m._finally
+        async def finally_clause():
+            await asyncio.sleep(0)
+            return 'bar'
+
+        self.assertEqual(await f(), 'bar')
+
+    async def test_async_return_value_from_finally2(self):
+        m = Merry()
+
+        @m._try
+        async def f():
+            await asyncio.sleep(0)
+            return 'foo'
+
+        @m._finally
+        async def finally_clause():
+            await asyncio.sleep(0)
+            return 'bar'
+
+        self.assertEqual(await f(), 'bar')
+
+    async def test_async_return_value_from_finally3(self):
+        m = Merry()
+
+        @m._try
+        async def f():
+            await asyncio.sleep(0)
+            1/0
+
+        @m._except(ZeroDivisionError)
+        async def zerodiv():
+            await asyncio.sleep(0)
+            return 'foo'
+
+        @m._finally
+        async def finally_clause():
+            await asyncio.sleep(0)
+            return 'bar'
+
+        self.assertEqual(await f(), 'bar')
+
+    async def test_async_global_debug(self):
+        m = Merry(debug=True)
+        except_called = False
+
+        @m._except(ZeroDivisionError)
+        def zerodiv():
+            nonlocal except_called
+            except_called = True
+
+        @m._try
+        async def f():
+            await asyncio.sleep(0)
+            1/0
+
+        with self.assertRaises(ZeroDivisionError):
+            await f()
+        self.assertFalse(except_called)
+
+    async def test_async_local_debug(self):
+        m = Merry()
+        except_called = False
+
+        @m._except(ZeroDivisionError, debug=True)
+        def zerodiv():
+            nonlocal except_called
+            except_called = True
+
+        @m._try
+        async def f():
+            await asyncio.sleep(0)
+            1/0
+
+        with self.assertRaises(ZeroDivisionError):
+            await f()
+        self.assertFalse(except_called)
+
+    async def test_async_local_debug_override(self):
+        m = Merry(debug=True)
+        except_called = False
+
+        @m._except(ZeroDivisionError, debug=False)
+        def zerodiv():
+            nonlocal except_called
+            except_called = True
+
+        @m._try
+        async def f():
+            await asyncio.sleep(0)
+            1/0
+
+        await f()
+        self.assertTrue(except_called)
+
     async def test_except_async(self):
         m = Merry()
         except_called = False
