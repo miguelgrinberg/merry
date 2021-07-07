@@ -15,6 +15,13 @@ class _Namespace:
 
 
 class Merry(object):
+    """Initialze merry.
+
+    :param logger_name: the logger name to use. The default is ``'merry'``.
+    :param debug: set to ``True`` to enable debug mode, which causes all
+                  errors to bubble up so that a debugger can catch them. The
+                  default is ``False``.
+    """
     def __init__(self, logger_name='merry', debug=False):
         self.logger = logging.getLogger(logger_name)
         self.g = _Namespace()
@@ -26,6 +33,14 @@ class Merry(object):
         self.finally_ = None
 
     def _try(self, f):
+        """Decorator that wraps a function in a try block.
+
+        Example usage::
+
+            @merry._try
+            def my_function():
+                # do something here
+        """
         @wraps(f)
         def wrapper(*args, **kwargs):
             ret = None
@@ -80,6 +95,23 @@ class Merry(object):
         return wrapper
 
     def _except(self, *args, **kwargs):
+        """Decorator that registers a function as an error handler for one or
+        more exception classes.
+
+        Example usage::
+
+            @merry._except(RuntimeError)
+            def runtime_error_handler(e):
+                print('runtime error:', str(e))
+
+        :param args: the list of exception classes to be handled by the
+                     decorated function.
+        :param kwargs: configuration arguments. Pass ``debug=True`` to enable
+                       debug mode for this handler, which bubbles up all
+                       exceptions. Pass ``debug=False`` to prevent the error
+                       from bubbling up, even if debug mode is enabled
+                       globally.
+        """
         def decorator(f):
             for e in args:
                 self.except_[e] = f
@@ -92,9 +124,25 @@ class Merry(object):
         return decorator
 
     def _else(self, f):
+        """Decorator to define the ``else`` clause handler.
+
+        Example usage::
+
+            @merry._else
+            def else_handler():
+                print('no exceptions were raised')
+        """
         self.else_ = f
         return f
 
     def _finally(self, f):
+        """Decorator to define the ``finally`` clause handler.
+
+        Example usage::
+
+            @merry._finally
+            def finally_handler():
+                print('clean up')
+        """
         self.finally_ = f
         return f
