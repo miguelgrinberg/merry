@@ -1,5 +1,11 @@
 # merry change log
 
+**Release 0.3.0** - 2021-07-08
+
+- Improved project structure with GitHub Actions builds and test coverage ([commit](https://github.com/miguelgrinberg/merry/commit/5e404bbd4289b688f8aca4b0417900fb2226814e))
+- Updated readme ([commit](https://github.com/miguelgrinberg/merry/commit/8c518e07f4256d6c4fccf47c07391c26a8e93184))
+- Documentation ([commit](https://github.com/miguelgrinberg/merry/commit/1566280d45d3be842966081c255ca751fd63da1a))
+
 **Release 0.2.2** - 2019-05-20
 
 - Add missing __version__ file to source distribution ([commit](https://github.com/miguelgrinberg/merry/commit/751c50e4b4868bed8544407b8006a59f258d5a24))
