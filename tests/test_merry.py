@@ -1,34 +1,10 @@
+from io import StringIO
 import logging
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
 import unittest
-
-import coverage
-
-cov = coverage.coverage()
-cov.start()
-
 from merry import Merry
 
 
 class TestMerry(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        pass
-
-    @classmethod
-    def tearDownClass(cls):
-        cov.stop()
-        cov.report(include='merry.py')
-
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
-
     def test_simple_except(self):
         m = Merry()
         m.g.except_called = False
