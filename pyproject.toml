@@ -18,13 +18,20 @@ dependencies = []
 file = "README.md"
 content-type = "text/markdown"
 
-[project.urls]
-Homepage = "https://github.com/miguelgrinberg/merry"
-"Bug Tracker" = "https://github.com/miguelgrinberg/merry/issues"
+[project.urls]:
+Homepage = "https://code.miguelgrinberg.com/miguelgrinberg/merry"
+Documentation = "https://merry-py.readthedocs.io/"
+"Source Code" = "https://code.miguelgrinberg.com/miguelgrinberg/merry"
+"Issue Tracker" = "https://code.miguelgrinberg.com/miguelgrinberg/merry/issues"
+Changelog = "https://code.miguelgrinberg.com/miguelgrinberg/merry/src/branch/main/CHANGES.md"
+Funding = "https://code.miguelgrinberg.com/miguelgrinberg/merry#sponsor-this-project"
 
 [project.optional-dependencies]
 docs = [
     "sphinx",
+]
+dev = [
+    "tox",
 ]
 
 [tool.setuptools]

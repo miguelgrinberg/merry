@@ -62,3 +62,6 @@ target/
 .ipynb_checkpoints
 
 venv
+.direnv
+.envrc
+requirements*.txt
