@@ -117,6 +117,36 @@ of application state that needs to be accessible to error handlers::
         print('Unexpected error, quitting')
         sys.exit(1)
 
+Asynchronous functions
+----------------------
+
+All the decorators automatically detect when they are used with asynchronous
+functions::
+
+    from merry import Merry
+
+    merry = Merry()
+
+    @merry._try
+    async def write_to_file(filename, data):
+        # ...
+
+    @merry._except(IOError)
+    async def ioerror():
+        print('Error: can't write to file')
+
+    @merry._except(Exception)
+    def catch_all(e):
+        print('Unexpected error: ' + str(e)
+
+    async def main():
+        await write_to_file('some_file', 'some_data')
+
+    asyncio.run(main())
+
+Note that when the ``try`` function is asynchronous, the ``except``, ``else``
+and ``finally`` handlers can be regular or asynchronous functions.
+
 Debug mode
 ----------
 
