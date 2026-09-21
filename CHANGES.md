@@ -1,5 +1,9 @@
 # merry change log
 
+**Release 1.0.0** - 2026-09-21
+
+- Asynchronous function support ([commit](https://code.miguelgrinberg.com/miguelgrinberg/merry/commit/22bcfcdfa5ac660cb1ba4a04955bd157e02377c7))
+
 **Release 0.3.0** - 2021-07-08
 
 - Python 2 dropped
