@@ -2,19 +2,12 @@ from functools import wraps
 import inspect
 import logging
 
-getargspec = None
-if getattr(inspect, 'getfullargspec', None):
-    getargspec = inspect.getfullargspec
-else:
-    # this one is deprecated in Python 3, but available in Python 2
-    getargspec = inspect.getargspec
-
 
 class _Namespace:
     pass
 
 
-class Merry(object):
+class Merry:
     """Initialze merry.
 
     :param logger_name: the logger name to use. The default is ``'merry'``.
@@ -47,11 +40,6 @@ class Merry(object):
             try:
                 ret = f(*args, **kwargs)
 
-                # note that if the function returned something, the else clause
-                # will be skipped. This is a similar behavior to a normal
-                # try/except/else block.
-                if ret is not None:
-                    return ret
             except Exception as e:
                 # find the best handler for this exception
                 handler = None
@@ -77,21 +65,26 @@ class Merry(object):
                     raise e
 
                 # invoke handler
-                if len(getargspec(self.except_[handler])[0]) == 0:
-                    return self.except_[handler]()
+                if len(inspect.getfullargspec(self.except_[handler])[0]) == 0:
+                    ret = self.except_[handler]()
                 else:
-                    return self.except_[handler](e)
+                    ret = self.except_[handler](e)
             else:
                 # if we have an else handler, call it now
-                if self.else_ is not None:
-                    return self.else_()
+                # note that if the main function returned something, the else
+                # clause will be skipped. This is a similar behavior to a
+                # normal try/except/else block.
+                if ret is None and self.else_ is not None:
+                    ret = self.else_()
             finally:
                 # if we have a finally handler, call it now
+                # if this function returns a value, it replaces what the main
+                # function returned.
                 if self.finally_ is not None:
                     alt_ret = self.finally_()
                     if alt_ret is not None:
                         ret = alt_ret
-                    return ret
+            return ret
         return wrapper
 
     def _except(self, *args, **kwargs):

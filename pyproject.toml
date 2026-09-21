@@ -18,7 +18,7 @@ dependencies = []
 file = "README.md"
 content-type = "text/markdown"
 
-[project.urls]:
+[project.urls]
 Homepage = "https://code.miguelgrinberg.com/miguelgrinberg/merry"
 Documentation = "https://merry-py.readthedocs.io/"
 "Source Code" = "https://code.miguelgrinberg.com/miguelgrinberg/merry"

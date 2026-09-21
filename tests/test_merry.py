@@ -1,10 +1,10 @@
 from io import StringIO
 import logging
-import unittest
+import pytest
 from merry import Merry
 
 
-class TestMerry(unittest.TestCase):
+class TestMerry:
     def test_simple_except(self):
         m = Merry()
         m.g.except_called = False
@@ -18,7 +18,7 @@ class TestMerry(unittest.TestCase):
             1/0
 
         f()
-        self.assertTrue(m.g.except_called)
+        assert m.g.except_called
 
     def test_simple_except2(self):
         m = Merry()
@@ -26,7 +26,7 @@ class TestMerry(unittest.TestCase):
 
         @m._except(ZeroDivisionError)
         def zerodiv(e):
-            self.assertIsInstance(e, ZeroDivisionError)
+            assert isinstance(e, ZeroDivisionError)
             m.g.except_called = True
 
         @m._try
@@ -34,7 +34,7 @@ class TestMerry(unittest.TestCase):
             1/0
 
         f()
-        self.assertTrue(m.g.except_called)
+        assert m.g.except_called
 
     def test_except_parent(self):
         m = Merry()
@@ -46,15 +46,23 @@ class TestMerry(unittest.TestCase):
 
         @m._except(ArithmeticError)
         def arith_error(e):
-            self.assertIsInstance(e, ZeroDivisionError)
+            assert isinstance(e, ZeroDivisionError)
             m.g.except_called = True
+
+        @m._except(BaseException)
+        def base_error(e):
+            pass
+
+        @m._except(ValueError)
+        def value_error(e):
+            pass
 
         @m._try
         def f():
             1/0
 
         f()
-        self.assertTrue(m.g.except_called)
+        assert m.g.except_called
 
     def test_except_finally(self):
         m = Merry()
@@ -79,9 +87,9 @@ class TestMerry(unittest.TestCase):
             1/0
 
         f()
-        self.assertTrue(m.g.except_called)
-        self.assertFalse(m.g.else_called)
-        self.assertTrue(m.g.finally_called)
+        assert m.g.except_called
+        assert not m.g.else_called
+        assert m.g.finally_called
 
     def test_else_finally(self):
         m = Merry()
@@ -110,9 +118,9 @@ class TestMerry(unittest.TestCase):
             pass
 
         f()
-        self.assertFalse(m.g.except_called)
-        self.assertTrue(m.g.else_called)
-        self.assertTrue(m.g.finally_called)
+        assert not m.g.except_called
+        assert m.g.else_called
+        assert m.g.finally_called
 
     def test_return_prevents_else(self):
         m = Merry()
@@ -137,9 +145,9 @@ class TestMerry(unittest.TestCase):
             return 'foo'
 
         f()
-        self.assertFalse(m.g.except_called)
-        self.assertFalse(m.g.else_called)
-        self.assertTrue(m.g.finally_called)
+        assert not m.g.except_called
+        assert not m.g.else_called
+        assert m.g.finally_called
 
     def test_unhandled(self):
         m = Merry()
@@ -148,7 +156,8 @@ class TestMerry(unittest.TestCase):
         def f():
             1/0
 
-        self.assertRaises(ZeroDivisionError, f)
+        with pytest.raises(ZeroDivisionError):
+            f()
 
     def test_return_value_if_no_error(self):
         m = Merry()
@@ -161,7 +170,7 @@ class TestMerry(unittest.TestCase):
         def else_clause():
             return 'bar'
 
-        self.assertEqual(f(), 'foo')
+        assert f() == 'foo'
 
     def test_return_value_from_except(self):
         m = Merry()
@@ -174,7 +183,7 @@ class TestMerry(unittest.TestCase):
         def f():
             1/0
 
-        self.assertEqual(f(), 'foo')
+        assert f() == 'foo'
 
     def test_return_value_from_else(self):
         m = Merry()
@@ -187,7 +196,7 @@ class TestMerry(unittest.TestCase):
         def f():
             pass
 
-        self.assertEqual(f(), 'foo')
+        assert f() == 'foo'
 
     def test_return_value_from_finally(self):
         m = Merry()
@@ -200,7 +209,7 @@ class TestMerry(unittest.TestCase):
         def finally_clause():
             return 'bar'
 
-        self.assertEqual(f(), 'bar')
+        assert f() == 'bar'
 
     def test_return_value_from_finally2(self):
         m = Merry()
@@ -213,7 +222,7 @@ class TestMerry(unittest.TestCase):
         def finally_clause():
             return 'bar'
 
-        self.assertEqual(f(), 'bar')
+        assert f() == 'bar'
 
     def test_return_value_from_finally3(self):
         m = Merry()
@@ -230,7 +239,7 @@ class TestMerry(unittest.TestCase):
         def finally_clause():
             return 'bar'
 
-        self.assertEqual(f(), 'bar')
+        assert f() == 'bar'
 
     def test_global_debug(self):
         m = Merry(debug=True)
@@ -244,8 +253,9 @@ class TestMerry(unittest.TestCase):
         def f():
             1/0
 
-        self.assertRaises(ZeroDivisionError, f)
-        self.assertFalse(m.g.except_called)
+        with pytest.raises(ZeroDivisionError):
+            f()
+        assert not m.g.except_called
 
     def test_local_debug(self):
         m = Merry()
@@ -259,8 +269,9 @@ class TestMerry(unittest.TestCase):
         def f():
             1/0
 
-        self.assertRaises(ZeroDivisionError, f)
-        self.assertFalse(m.g.except_called)
+        with pytest.raises(ZeroDivisionError):
+            f()
+        assert not m.g.except_called
 
     def test_local_debug_override(self):
         m = Merry(debug=True)
@@ -275,7 +286,7 @@ class TestMerry(unittest.TestCase):
             1/0
 
         f()
-        self.assertTrue(m.g.except_called)
+        assert m.g.except_called
 
     def test_logger(self):
         m = Merry()
@@ -292,8 +303,8 @@ class TestMerry(unittest.TestCase):
             1/0
 
         f()
-        self.assertIn('Traceback', stream.getvalue())
-        self.assertIn('ZeroDivisionError: ', stream.getvalue())
+        assert 'Traceback' in stream.getvalue()
+        assert 'ZeroDivisionError: ' in stream.getvalue()
 
     def test_custom_logger(self):
         my_logger = logging.getLogger('foo')
@@ -312,9 +323,5 @@ class TestMerry(unittest.TestCase):
             1/0
 
         f()
-        self.assertIn('Traceback', stream.getvalue())
-        self.assertIn('ZeroDivisionError: ', stream.getvalue())
-
-
-if __name__ == '__main__':
-    unittest.main()
+        assert 'Traceback' in stream.getvalue()
+        assert 'ZeroDivisionError: ' in stream.getvalue()
